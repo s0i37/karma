@@ -1,0 +1,1 @@
+./script ESSID IFACE
