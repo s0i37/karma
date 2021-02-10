@@ -1,1 +1,1 @@
-./script ESSID IFACE
+./script IFACE ESSID
