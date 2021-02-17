@@ -32,8 +32,8 @@ def on_network(essid, iface):
 	for script in os.listdir("on_network"):
 		script = os.path.join("on_network", script)
 		if os.path.isfile(script) and os.access(script, os.X_OK):
-			DEBUG(f'{script} "{essid}" {iface}')
-			subprocess.Popen(f'{script} "{essid}" {iface}', shell=True)
+			DEBUG(f'{script} {iface} "{essid}"')
+			subprocess.Popen(f'{script} {iface} "{essid}"', shell=True)
 
 def on_client(ip, mac, attacker_ip):
 	for script in os.listdir("on_client"):
@@ -382,7 +382,7 @@ def parse_raw_80211(p):
 				if args.wpa:
 					Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
 					known_essids.add(essid)
-	'''else:
+	else:
 		essid = "test"
 		if not essid in known_essids and not hostapd_opn and not hostapd_wpa:
 			pcap_no += 1
@@ -390,13 +390,13 @@ def parse_raw_80211(p):
 				Thread(target=start_AP_OPN, args=(args.opn,essid)).start()
 			if args.wpa:
 				Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
-			known_essids.add(essid)'''
+			known_essids.add(essid)
 				
 known_targets = set()
 def parse_client_trafic_OPN(p):
 	global known_targets, hostapd_opn
 	if IP in p:
-		if p[IP].src in ("0.0.0.0", "127.0.0.1", hostapd_opn.dhcpd.ip_gw if hostapd_opn.dhcpd else "") :
+		if p[IP].src in ("0.0.0.0", "127.0.0.1", hostapd_opn.dhcpd.ip_gw if hostapd_opn.dhcpd else ""):
 			return
 		if p[IP].src in known_targets or p[IP].dst in known_targets:
 			return
