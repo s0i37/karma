@@ -22,32 +22,36 @@ oui = MacLookup()
 conf.verb = 0
 
 def on_probe(essid, sta, freq, signal, vendor):
-	for script in os.listdir("on_probe"):
-		script = os.path.join("on_probe", script)
-		if os.path.isfile(script) and os.access(script, os.X_OK):
-			DEBUG(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"')
-			subprocess.Popen(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"', shell=True)
+	for cwd,directories,files in os.walk("on_probe"):
+		for file in files:
+			script = os.path.join(cwd, file)
+			if os.access(script, os.X_OK):
+				DEBUG(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"')
+				subprocess.Popen(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"', shell=True)
 
 def on_network(essid, iface):
-	for script in os.listdir("on_network"):
-		script = os.path.join("on_network", script)
-		if os.path.isfile(script) and os.access(script, os.X_OK):
-			DEBUG(f'{script} {iface} "{essid}"')
-			subprocess.Popen(f'{script} {iface} "{essid}"', shell=True)
+	for cwd,directories,files in os.walk("on_network"):
+		for file in files:
+			script = os.path.join(cwd, file)
+			if os.access(script, os.X_OK):
+				DEBUG(f'{script} {iface} "{essid}"')
+				subprocess.Popen(f'{script} {iface} "{essid}"', shell=True)
 
 def on_client(ip, mac, attacker_ip):
-	for script in os.listdir("on_client"):
-		script = os.path.join("on_client", script)
-		if os.path.isfile(script) and os.access(script, os.X_OK):
-			DEBUG(f"{script} {ip} {mac} {attacker_ip}")
-			subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True)
+	for cwd,directories,files in os.walk("on_client"):
+		for file in files:
+			script = os.path.join(cwd, file)
+			if os.access(script, os.X_OK):
+				DEBUG(f"{script} {ip} {mac} {attacker_ip}")
+				subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True)
 
 def on_handshake(pcap, essid, bssid):
-	for script in os.listdir("on_handshake"):
-		script = os.path.join("on_handshake", script)
-		if os.path.isfile(script) and os.access(script, os.X_OK):
-			DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
-			subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True)
+	for cwd,directories,files in os.walk("on_handshake"):
+		for file in files:
+			script = os.path.join(cwd, file)
+			if os.access(script, os.X_OK):
+				DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
+				subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True)
 
 class Hostapd:
 	config = ''
