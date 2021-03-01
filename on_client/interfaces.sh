@@ -1,5 +1,6 @@
 #!/bin/bash
 
 echo 'getting network interfaces via NetBIOS'
+HOME='/home/pi'
 
-/home/soier/src/netbios.py $1
+$HOME/src/netbios.py $1

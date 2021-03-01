@@ -1,10 +1,14 @@
 #!/bin/bash
 
-WAIT_SEC=1
+WAIT=1
 DPORT=445
+HOME='/home/pi'
 
-nc -w $WAIT_SEC $1 $DPORT 2> /dev/null && {
+if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo 'checking MS17-010'
-
-	python2 /home/soier/src/MS17-010/checker.py $1
-}
+	python2 $HOME/src/MS17-010/checker.py $1 > /tmp/ms17-010.log
+	if grep -q 'The target is not patched' /tmp/ms17-010.log; then
+		led red on 2> /dev/null
+	fi
+	cat /tmp/ms17-010.log
+fi

