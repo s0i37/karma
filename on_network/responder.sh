@@ -3,7 +3,7 @@
 echo 'running NetBIOS attacks'
 HOME='/home/pi/'
 
-[[ $(pgrep responder) = '' ]] && {
+[[ $(pgrep -f Responder.py) = '' ]] && {
 	screen -dmS responder python3 $HOME/src/responder/Responder.py -I "$1" -r -d -w -F
 }
 

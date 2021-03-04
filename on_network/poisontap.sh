@@ -17,7 +17,7 @@ HOME='/home/pi/'
 
 tail -f $HOME/src/poisontap/poisontap.cookies.log | while read line
 do
-	if echo $line | grep 'Cookie:' > /dev/null; then
+	if echo $line | grep 'Cookie:' --color=auto; then
 		led yellow on 2> /dev/null
 	fi
 done
