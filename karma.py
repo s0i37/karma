@@ -53,6 +53,24 @@ def on_handshake(pcap, essid, bssid):
 				DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
 				subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True)
 
+def DEBUG(msg, end='\n'):
+	print(Fore.LIGHTBLACK_EX + "[.] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
+
+def INFO(msg, end='\n'):
+	print(Fore.LIGHTBLUE_EX + "[*] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
+
+def INFO2(msg, end='\n'):
+	print(Fore.BLUE + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
+
+def NOTICE(msg, end='\n'):
+	print(Fore.LIGHTCYAN_EX + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
+
+def WARN(msg, end='\n'):
+	print(Fore.LIGHTGREEN_EX + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
+
+def ERROR(msg, end='\n'):
+	print(Fore.RESET + "[!] [{time}] {msg}".format(time=get_time(), msg=msg), end=end)
+
 class Hostapd:
 	config = ''
 	file = ''
@@ -106,7 +124,8 @@ class Hostapd:
 				self.is_up = False
 			elif line.find("AP-STA-CONNECTED") != -1:
 				client = line.split()[2]
-				NOTICE("[{hostapd}] client {client} connected".format(hostapd=self.name, client=client))
+				vendor = lookup(client)
+				NOTICE("[{hostapd}] client {client} ({vendor}) connected".format(hostapd=self.name, client=client, vendor=vendor))
 			elif line.find("AP-STA-DISCONNECTED") != -1:
 				client = line.split()[2]
 				NOTICE("[{hostapd}] client {client} disconnected".format(hostapd=self.name, client=client))
@@ -212,24 +231,6 @@ def get_password(essid):
 		return open(os.path.join("handshakes","%s.txt"%essid)).read()
 	except:
 		return False
-
-def DEBUG(msg, end='\n'):
-	print(Fore.LIGHTBLACK_EX + "[.] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
-
-def INFO(msg, end='\n'):
-	print(Fore.LIGHTBLUE_EX + "[*] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
-
-def INFO2(msg, end='\n'):
-	print(Fore.BLUE + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
-
-def NOTICE(msg, end='\n'):
-	print(Fore.LIGHTCYAN_EX + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
-
-def WARN(msg, end='\n'):
-	print(Fore.LIGHTGREEN_EX + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
-
-def ERROR(msg, end='\n'):
-	print(Fore.RED + "[!] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
 
 def lookup(mac):
 	try:
