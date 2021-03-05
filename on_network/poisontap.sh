@@ -7,7 +7,7 @@ HOME='/home/pi/'
   dnsspoof -i "$1" port 53
 }
 
-[[ $(pgrep pi_poisontap.js) = '' ]] && {
+[[ $(pgrep -f pi_poisontap.js) = '' ]] && {
   nodejs $HOME/src/poisontap/pi_poisontap.js
 }
 
