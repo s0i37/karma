@@ -126,9 +126,12 @@ class Hostapd:
 				client = line.split()[2]
 				vendor = lookup(client)
 				NOTICE("[{hostapd}] client {client} ({vendor}) connected".format(hostapd=self.name, client=client, vendor=vendor))
+				os.system("led cyan on 2> /dev/null")
 			elif line.find("AP-STA-DISCONNECTED") != -1:
 				client = line.split()[2]
 				NOTICE("[{hostapd}] client {client} disconnected".format(hostapd=self.name, client=client))
+				os.system("led cyan off 2> /dev/null")
+				os.system("led green off 2> /dev/null")
 			if self.is_shutdown:
 				break
 
@@ -410,6 +413,7 @@ def parse_client_trafic_OPN(p):
 		client_ip = p[IP].src
 		ip_gw = str( IPNetwork("{ip}/24".format(ip=client_ip))[1] )
 		WARN("client {mac} {ip}".format(mac=client_mac, ip=client_ip))
+		os.system("led green on 2> /dev/null")
 		known_targets.add(client_ip)
 		if not client_ip in hostapd_opn.network:
 			hostapd_opn.change_network_settings("{ip}/24".format(ip=ip_gw))
@@ -426,6 +430,7 @@ def parse_client_trafic_WPA(p):
 		client_ip = p[IP].src
 		ip_gw = str( IPNetwork("{ip}/24".format(ip=client_ip))[1] )
 		WARN("client {mac} {ip}".format(mac=client_mac, ip=client_ip))
+		os.system("led green on 2> /dev/null")
 		known_targets.add(client_ip)
 		if not client_ip in hostapd_wpa.network:
 			hostapd_wpa.change_network_settings("{ip}/24".format(ip=ip_gw))
