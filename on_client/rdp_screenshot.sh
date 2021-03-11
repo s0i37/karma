@@ -1,7 +1,7 @@
 #!/bin/bash
 
 WAIT=1
-TIMEOUT=60
+TIMEOUT=30
 DPORT=3389
 HOME='/home/pi'
 export DISPLAY=:1
