@@ -5,7 +5,7 @@ TIMEOUT=60
 HTTP_PORTS=(80 8080)
 HTTPS_PORTS=(443 8443)
 HOME='/home/pi/'
-export DISPLAY=:1
+export DISPLAY=:0
 time=$(date +'%H:%M:%S_%d.%m.%Y')
 
 function www_screenshot(){

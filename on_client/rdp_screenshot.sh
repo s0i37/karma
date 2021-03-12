@@ -4,7 +4,7 @@ WAIT=1
 TIMEOUT=30
 DPORT=3389
 HOME='/home/pi'
-export DISPLAY=:1
+export DISPLAY=:0
 time=$(date +'%H:%M:%S_%d.%m.%Y')
 
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then

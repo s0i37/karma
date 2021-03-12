@@ -2,7 +2,7 @@
 
 WAIT=1
 DPORT=3389
-export DISPLAY=:1
+export DISPLAY=:0
 
 if nc -nv $WAIT $1 445 < /dev/null 2> /dev/null; then
 	true # ignore rdp bruteforce if smb port has opened
