@@ -18,6 +18,9 @@ TIMEOUT = 20
 TIMEOUT_CLIENT_RECONNECT = 5
 CHANNEL_HOPPING_TIMEOUT = 2
 CLIENT_MONITOR_TIMEOUT = 2
+network_scenarios = []
+client_scenarios = []
+handshake_scenarios = []
 oui = MacLookup()
 conf.verb = 0
 
@@ -35,7 +38,7 @@ def on_network(essid, iface):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} {iface} "{essid}"')
-				subprocess.Popen(f'{script} {iface} "{essid}"', shell=True)
+				network_scenarios.push( subprocess.Popen(f'{script} {iface} "{essid}"', shell=True) )
 
 def on_client(ip, mac, attacker_ip):
 	for cwd,directories,files in os.walk("on_client"):
@@ -43,7 +46,7 @@ def on_client(ip, mac, attacker_ip):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f"{script} {ip} {mac} {attacker_ip}")
-				subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True)
+				client_scenarios.push( subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True) )
 
 def on_handshake(pcap, essid, bssid):
 	for cwd,directories,files in os.walk("on_handshake"):
@@ -51,7 +54,15 @@ def on_handshake(pcap, essid, bssid):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
-				subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True)
+				handshake_scenarios.push( subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True) )
+
+def stop_scenarios():
+	for scenario in network_scenarios + client_scenarios + handshake_scenarios:
+		scenario.kill()
+		DEBUG(f"stop scenario {scenario.args}")
+	network_scenarios.clear()
+	client_scenarios.clear()
+	handshake_scenarios.clear()
 
 def DEBUG(msg, end='\n'):
 	print(Fore.LIGHTBLACK_EX + "[.] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
@@ -290,6 +301,7 @@ def start_AP_OPN(iface, essid):
 				break
 		hostapd_opn.dhcpd.stop()
 		hostapd_opn.shutdown()
+		stop_scenarios()
 		#if victim_trafic:
 		#	save(victim_trafic, network_name=essid)
 		INFO("stop OPN network \"{essid}\"".format(essid=essid))
@@ -347,6 +359,7 @@ def start_AP_WPA(iface, essid):
 			if pcap:
 				on_handshake(pcap, essid, get_mac())
 				known_essids.remove(essid)
+		stop_scenarios()
 		INFO("stop WPA network \"{essid}\"".format(essid=essid))
 	else:
 		hostapd_wpa.shutdown()
