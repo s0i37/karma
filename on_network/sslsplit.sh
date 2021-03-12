@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 'SSL splitting'
+echo '[*] SSL splitting'
 HOME='/home/pi/'
 
 [[ $(iptables -t nat -vnL PREROUTING | grep "$1" | grep 443) = '' ]] && {

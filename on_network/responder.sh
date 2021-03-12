@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 'running NetBIOS attacks'
+echo '[*] running NetBIOS attacks'
 HOME='/home/pi/'
 
 [[ $(pgrep -f Responder.py) = '' ]] && {

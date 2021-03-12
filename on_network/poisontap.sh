@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 'running siphons cookies and web cache poisoning'
+echo '[*] running cookies siphoning and web cache poisoning'
 HOME='/home/pi/'
 
 [[ $(pgrep dnsspoof) = '' ]] && {

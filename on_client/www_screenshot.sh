@@ -22,7 +22,7 @@ function www_screenshot(){
 for port in ${HTTP_PORTS[*]}
 do
 	if nc -nw $WAIT $1 $port < /dev/null 2> /dev/null; then
-		echo "screenshoting http://$1:$port"
+		echo "[*] screenshoting http://$1:$port"
 		www_screenshot "http://$1:$port" $port
 	fi
 done
@@ -30,7 +30,7 @@ done
 for port in ${HTTPS_PORTS[*]}
 do
 	if nc -nw $WAIT $1 $port < /dev/null 2> /dev/null; then
-		echo "screenshoting https://$1:$port"
+		echo "[*] screenshoting https://$1:$port"
 		www_screenshot "https://$1:$port" $port
 	fi
 done

