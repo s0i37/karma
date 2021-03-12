@@ -9,7 +9,7 @@ HOME='/home/pi/'
 
 inotifywait -e MODIFY -rm $HOME/src/responder/logs | while read event
 do
- 	if echo $event | grep -v Session.log > /dev/null; then
+ 	if echo $event | grep -e NTLM -e ClearText; then
  		led yellow on 2> /dev/null
  	fi
 done
