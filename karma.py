@@ -54,7 +54,7 @@ def on_handshake(pcap, essid, bssid):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
-				handshake_scenarios.append( subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True) )
+				subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True)
 
 def stop_scenarios():
 	for scenario in network_scenarios + client_scenarios + handshake_scenarios:
@@ -285,8 +285,8 @@ def start_AP_OPN(iface, essid):
 
 	hostapd_opn = try_to_start_hostapd(Hostapd_OPN, iface, essid, password=False, max_attempts=5)
 	if hostapd_opn.is_up:
-		hostapd_opn.change_network_settings("11.0.0.1/1")
-		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/1")
+		hostapd_opn.change_network_settings("11.0.0.1/24")
+		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/24")
 		INFO("run {num} OPN network \"{essid}\"".format(num=pcap_no, essid=essid))
 		on_network(essid, iface)
 		begin = time()
@@ -324,6 +324,8 @@ def start_AP_WPA(iface, essid):
 	hostapd_wpa_is_start = True
 
 	password = get_password(essid)
+	if password:
+		WARN("cracked {essid}: {password}".format(essid=essid, password=password))
 	hostapd_wpa = try_to_start_hostapd(Hostapd_WPA, iface, essid, password, max_attempts=5)
 	if hostapd_wpa.is_up:
 		if password:
@@ -405,7 +407,7 @@ def parse_raw_80211(p):
 				if args.wpa:
 					Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
 					known_essids.add(essid)
-'''	else:
+	else:
 		essid = "test"
 		if not essid in known_essids and not hostapd_opn and not hostapd_wpa:
 			pcap_no += 1
@@ -413,7 +415,7 @@ def parse_raw_80211(p):
 				Thread(target=start_AP_OPN, args=(args.opn,essid)).start()
 			if args.wpa:
 				Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
-			known_essids.add(essid)'''
+			known_essids.add(essid)
 				
 known_targets = set()
 def parse_client_trafic_OPN(p):
