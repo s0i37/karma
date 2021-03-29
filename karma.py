@@ -38,7 +38,7 @@ def on_network(essid, iface):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} {iface} "{essid}"')
-				network_scenarios.push( subprocess.Popen(f'{script} {iface} "{essid}"', shell=True) )
+				network_scenarios.append( subprocess.Popen(f'{script} {iface} "{essid}"', shell=True) )
 
 def on_client(ip, mac, attacker_ip):
 	for cwd,directories,files in os.walk("on_client"):
@@ -46,7 +46,7 @@ def on_client(ip, mac, attacker_ip):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f"{script} {ip} {mac} {attacker_ip}")
-				client_scenarios.push( subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True) )
+				client_scenarios.append( subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True) )
 
 def on_handshake(pcap, essid, bssid):
 	for cwd,directories,files in os.walk("on_handshake"):
@@ -54,7 +54,7 @@ def on_handshake(pcap, essid, bssid):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
-				handshake_scenarios.push( subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True) )
+				handshake_scenarios.append( subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True) )
 
 def stop_scenarios():
 	for scenario in network_scenarios + client_scenarios + handshake_scenarios:
@@ -244,7 +244,7 @@ def get_password(essid):
 	try:
 		return open(os.path.join("handshakes","%s.txt"%essid)).read()
 	except:
-		return False
+		return None
 
 def lookup(mac):
 	try:
@@ -285,8 +285,8 @@ def start_AP_OPN(iface, essid):
 
 	hostapd_opn = try_to_start_hostapd(Hostapd_OPN, iface, essid, password=False, max_attempts=5)
 	if hostapd_opn.is_up:
-		hostapd_opn.change_network_settings("11.0.0.1/24")
-		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/24")
+		hostapd_opn.change_network_settings("11.0.0.1/1")
+		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/1")
 		INFO("run {num} OPN network \"{essid}\"".format(num=pcap_no, essid=essid))
 		on_network(essid, iface)
 		begin = time()
@@ -353,10 +353,11 @@ def start_AP_WPA(iface, essid):
 		if hostapd_wpa.dhcpd:
 			hostapd_wpa.dhcpd.stop()
 		hostapd_wpa.shutdown()
-		if handshakes and not password:
+		if handshakes and password == None:
 			handshakes.append(get_beacon(essid))
 			pcap = save(handshakes, network_name=os.path.join("handshakes", essid))
 			if pcap:
+				open(os.path.join("handshakes","%s.txt"%essid),"w").close()
 				on_handshake(pcap, essid, get_mac())
 				known_essids.remove(essid)
 		stop_scenarios()
@@ -393,7 +394,7 @@ def parse_raw_80211(p):
 			freq = "%d" % p[RadioTap].ChannelFrequency if hasattr(p[RadioTap], "ChannelFrequency") else "-"
 			INFO2("{sta} ({vendor}) {signal} dBM ({freq} MHz): {essid}".format(sta=sta, vendor=vendor, signal=signal, freq=freq, essid=essid))
 			on_probe(essid, sta, freq, signal, vendor)
-			if not essid in known_essids and not hostapd_opn and not hostapd_wpa:
+			if essid and not essid in known_essids and not hostapd_opn and not hostapd_wpa:
 				pcap_no += 1
 				#os.system("killall -KILL hostapd 2> /dev/null")
 				probe_response(args.mon, sta, essid)
