@@ -211,6 +211,7 @@ interface={iface}
 dhcp-range={ip_start},{ip_end},24h
 dhcp-option=1,{mask}
 dhcp-option=3,{ip_gw}
+server=8.8.8.8
 '''
 	def __init__(self, iface, network):
 		self.iface = iface

