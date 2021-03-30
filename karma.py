@@ -118,6 +118,9 @@ class Hostapd:
 		sleep(1)
 		self.hostapd.kill()
 		self.hostapd.wait()
+		os.system("led blue off 2> /dev/null")
+		os.system("led cyan off 2> /dev/null")
+		os.system("led green off 2> /dev/null")
 #		os.system("ifconfig {iface} down".format(iface=self.iface))
 #		DEBUG("ifconfig {iface} down".format(iface=self.iface))
 
@@ -131,8 +134,10 @@ class Hostapd:
 			line = line.decode("utf-8")
 			if line.find("AP-ENABLED") != -1:
 				self.is_up = True
+				os.system("led blue on 2> /dev/null")
 			elif line.find("AP-DISABLED") != -1:
 				self.is_up = False
+				os.system("led blue off 2> /dev/null")
 			elif line.find("AP-STA-CONNECTED") != -1:
 				client = line.split()[2]
 				vendor = lookup(client)
