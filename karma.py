@@ -291,8 +291,8 @@ def start_AP_OPN(iface, essid):
 
 	hostapd_opn = try_to_start_hostapd(Hostapd_OPN, iface, essid, password=False, max_attempts=5)
 	if hostapd_opn.is_up:
-		hostapd_opn.change_network_settings("11.0.0.1/24")
-		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/24")
+		hostapd_opn.change_network_settings("11.0.0.1/1")
+		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/1")
 		INFO("run {num} OPN network \"{essid}\"".format(num=pcap_no, essid=essid))
 		on_network(essid, iface)
 		begin = time()
@@ -335,8 +335,8 @@ def start_AP_WPA(iface, essid):
 	hostapd_wpa = try_to_start_hostapd(Hostapd_WPA, iface, essid, password, max_attempts=5)
 	if hostapd_wpa.is_up:
 		if password:
-			hostapd_wpa.change_network_settings("12.0.0.1/24")
-			hostapd_wpa.dhcpd = DHCPD(iface, "12.0.0.1/24")
+			hostapd_wpa.change_network_settings("128.0.0.1/1")
+			hostapd_wpa.dhcpd = DHCPD(iface, "128.0.0.1/1")
 		INFO("run {num} WPA network \"{essid}\" \"{password}\"".format(num=pcap_no, essid=essid, password=password if password else ""))
 		on_network(essid, iface)
 		m1 = False
