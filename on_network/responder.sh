@@ -3,10 +3,14 @@
 echo '[*] running Responder attacks'
 HOME='/home/pi/'
 
-for port in 21 25 53 80 88 110 143 389 443 445 1433 3389
+if ! iptables -t nat -vnL PREROUTING | grep " $1" | grep -q 53; then
+  iptables -t nat -A PREROUTING -i "$1" -p udp --dport 53 -j REDIRECT --to-port 53
+fi
+
+for port in 21 25 80 88 110 143 389 443 445 1433 3389
 do
-	if ! iptables -t nat -vnL PREROUTING | grep "$1" | grep -q $port; then
-	  iptables -t nat -A PREROUTING -i "$1" -p udp --dport $port -j REDIRECT --to-port $port
+	if ! iptables -t nat -vnL PREROUTING | grep " $1" | grep -q $port; then
+	  iptables -t nat -A PREROUTING -i "$1" -p tcp --dport $port -j REDIRECT --to-port $port
 	fi
 done
 
