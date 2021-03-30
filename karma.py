@@ -291,8 +291,8 @@ def start_AP_OPN(iface, essid):
 
 	hostapd_opn = try_to_start_hostapd(Hostapd_OPN, iface, essid, password=False, max_attempts=5)
 	if hostapd_opn.is_up:
-		hostapd_opn.change_network_settings("11.0.0.1/1")
-		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/1")
+		hostapd_opn.change_network_settings("11.0.0.1/8")
+		hostapd_opn.dhcpd = DHCPD(iface, "11.0.0.1/8")
 		INFO("run {num} OPN network \"{essid}\"".format(num=pcap_no, essid=essid))
 		on_network(essid, iface)
 		begin = time()
