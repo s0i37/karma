@@ -15,6 +15,6 @@ HOME='/home/pi/'
 
 tail -f $HOME/data.log | grep -ai -e cookie -e passw | while read match
 do
-	echo $match | grep -ai -e cookie -e passw
+	echo $match | grep -ai -e cookie -e passw --color=auto
 	led yellow on 2> /dev/null
 done

