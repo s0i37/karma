@@ -334,6 +334,7 @@ def start_AP_WPA(iface, essid):
 	password = get_password(essid)
 	if password:
 		WARN("cracked {essid}: {password}".format(essid=essid, password=password))
+	password = args.psk or password
 	hostapd_wpa = try_to_start_hostapd(Hostapd_WPA, iface, essid, password, max_attempts=5)
 	if hostapd_wpa.is_up:
 		if password:
@@ -492,9 +493,12 @@ def channel_hopping():
 			sleep(CHANNEL_HOPPING_TIMEOUT)
 
 parser = argparse.ArgumentParser(description='wifi clients announce attacking')
-parser.add_argument("-mon", type=str, default='', help="interface for monitor 802.11")
-parser.add_argument("-opn", type=str, default='', help="interface for starting OPN networks")
-parser.add_argument("-wpa", type=str, default='', help="interface for starting WPA networks")
+parser.add_argument("-mon", type=str, metavar='iface', default='', help="interface for monitor 802.11")
+parser.add_argument("-opn", type=str, metavar='iface', default='', help="interface for starting OPN networks")
+parser.add_argument("-wpa", type=str, metavar='iface', default='', help="interface for starting WPA networks")
+parser.add_argument("-T", type=int, metavar='seconds', default='20', help="wifi network working time")
+parser.add_argument("--essid", type=str, metavar='name', default='', help="force start wifi network with ESSID")
+parser.add_argument("--psk", type=str, metavar='password', default='', help="use PSK key for WPA networks")
 args = parser.parse_args()
 
 origin = conf.iface
@@ -503,8 +507,14 @@ opn_mac = Ether().src
 conf.iface = args.wpa
 wpa_mac = Ether().src
 conf.iface = origin
+TIMEOUT = args.T
 
-sniffer_thr = Thread(target=sniffer, args=(args.mon,))
-sniffer_thr.start()
-sniffer_thr.join()
-
+if args.mon:
+	sniffer_thr = Thread(target=sniffer, args=(args.mon,))
+	sniffer_thr.start()
+	sniffer_thr.join()
+else:
+	if args.opn and args.essid:
+		start_AP_OPN(args.opn, args.essid)
+	elif args.wpa and args.essid and args.psk:
+		start_AP_WPA(args.wpa, args.essid)
