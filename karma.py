@@ -434,6 +434,8 @@ def parse_client_trafic_OPN(p):
 			return
 		if p[IP].src in known_targets or p[IP].dst in known_targets:
 			return
+		if p[Ether].src == opn_mac:
+			return
 		client_mac = p[Ether].src
 		client_ip = p[IP].src
 		ip_gw = str( IPNetwork("{ip}/24".format(ip=client_ip))[1] )
@@ -450,6 +452,8 @@ def parse_client_trafic_WPA(p):
 		if p[IP].src in ("0.0.0.0", "127.0.0.1", hostapd_wpa.dhcpd.ip_gw if hostapd_wpa.dhcpd else ""):
 			return
 		if p[IP].src in known_targets or p[IP].dst in known_targets:
+			return
+		if p[Ether].src == wpa_mac:
 			return
 		client_mac = p[Ether].src
 		client_ip = p[IP].src
