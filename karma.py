@@ -390,6 +390,7 @@ def save(trafic, network_name):
 
 known_essids = set()
 pcap_no = 0
+stations = {}
 def parse_raw_80211(p):
 	global known_essids, hostapd_opn, hostapd_wpa, pcap_no
 	if Dot11ProbeReq in p:
@@ -403,7 +404,18 @@ def parse_raw_80211(p):
 			vendor = lookup(sta)
 			signal = "%s" % p[RadioTap].dBm_AntSignal if hasattr(p[RadioTap], "dBm_AntSignal") else "-"
 			freq = "%d" % p[RadioTap].ChannelFrequency if hasattr(p[RadioTap], "ChannelFrequency") else "-"
-			INFO2("{sta} ({vendor}) {signal} dBM ({freq} MHz): {essid}".format(sta=sta, vendor=vendor, signal=signal, freq=freq, essid=essid))
+			if not sta in stations:
+				number = ""
+				for station in stations.values():
+					if essid in station["probes"]:
+						number = "~"
+						break
+				if not number:
+					number = str(len(stations) + 1)
+				stations[sta] = { "number": number, "probes": set([essid]) }
+			else:
+				stations[sta]["probes"].add(essid)
+			INFO2("{sta} ({vendor}) [{num}] {signal} dBM ({freq} MHz): {essid}".format(sta=sta, vendor=vendor, num="%s/%d"%(stations[sta]["number"],len(stations)), signal=signal, freq=freq, essid=essid))
 			on_probe(essid, sta, freq, signal, vendor)
 			if essid and not essid in known_essids and not hostapd_opn and not hostapd_wpa:
 				pcap_no += 1
