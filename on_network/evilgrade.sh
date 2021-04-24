@@ -9,5 +9,7 @@ echo '[*] running insecure updates MiTM attacks'
 	iptables -t nat -A PREROUTING -i "$1" -p tcp --dport 80 -j REDIRECT --to-ports 80
 }
 
+#screen
 #sudo evilgrade
 #start
+#ctrl-a d

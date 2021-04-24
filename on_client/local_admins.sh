@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WAIT=1
+WAIT=2
 DPORT=445
 
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
