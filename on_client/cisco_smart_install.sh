@@ -1,7 +1,9 @@
 #!/bin/bash
 
-WAIT=1
+WAIT=2
 DPORT=4786
+HOME='/home/pi'
+#https://github.com/Sab0tag3d/SIET
 
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo '[*] attacking Cisco Smart Install'
