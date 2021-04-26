@@ -2,7 +2,7 @@
 
 echo '[*] HTTP cleartext monitoring'
 
-ngrep -d "$1" -i 'cookie|passw|token' 'port 80 or port 8080' 2>&1 >> /tmp/ngrep.log &
+ngrep -d "$1" -i 'cookie|passw|token' 'port 80 or port 8080' 2>&1 > /tmp/ngrep.log &
 
 tail -f /tmp/ngrep.log | while read line
 do

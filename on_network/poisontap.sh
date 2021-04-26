@@ -14,7 +14,7 @@ sleep 5 # after captive portal checks
 }
 
 [[ $(pgrep -f pi_poisontap.js) = '' ]] && {
-  truncate -s $HOME/src/poisontap/poisontap.cookies.log
+  truncate -s 1 $HOME/src/poisontap/poisontap.cookies.log
   screen -dmS poisontap nodejs $HOME/src/poisontap/pi_poisontap.js
 }
 
