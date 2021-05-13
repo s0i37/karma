@@ -7,6 +7,7 @@ from netaddr import IPNetwork, IPAddress
 import os
 import random
 import subprocess
+from signal import SIGTERM
 from time import sleep, time
 from datetime import datetime
 from threading import Thread
@@ -31,7 +32,7 @@ def on_probe(essid, sta, freq, signal, vendor):
 		for file in files:
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
-				subprocess.Popen(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"', shell=True)
+				subprocess.Popen(f'{script} "{essid}" {sta} {freq} {signal} "{vendor}"', shell=True, preexec_fn=os.setsid)
 
 def on_network(essid, iface):
 	for cwd,directories,files in os.walk("on_network"):
@@ -39,7 +40,7 @@ def on_network(essid, iface):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} {iface} "{essid}"')
-				network_scenarios.append( subprocess.Popen(f'{script} {iface} "{essid}"', shell=True) )
+				network_scenarios.append( subprocess.Popen(f'{script} {iface} "{essid}"', shell=True, preexec_fn=os.setsid) )
 
 def on_client(ip, mac, attacker_ip):
 	for cwd,directories,files in os.walk("on_client"):
@@ -47,7 +48,7 @@ def on_client(ip, mac, attacker_ip):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f"{script} {ip} {mac} {attacker_ip}")
-				client_scenarios.append( subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True) )
+				client_scenarios.append( subprocess.Popen(f"{script} {ip} {mac} {attacker_ip}", shell=True, preexec_fn=os.setsid) )
 
 def on_handshake(pcap, essid, bssid):
 	for cwd,directories,files in os.walk("on_handshake"):
@@ -55,7 +56,7 @@ def on_handshake(pcap, essid, bssid):
 			script = os.path.join(cwd, file)
 			if os.access(script, os.X_OK):
 				DEBUG(f'{script} "{pcap}" "{essid}" {bssid}')
-				subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True)
+				handshake_scenarios.append( subprocess.Popen(f'{script} "{pcap}" "{essid}" {bssid}', shell=True, preexec_fn=os.setsid) )
 
 passwords = {}
 def update_handshakes_info():
@@ -75,8 +76,9 @@ def update_handshakes_info():
 	return passwords_new
 
 def stop_scenarios():
-	for scenario in network_scenarios + client_scenarios + handshake_scenarios:
-		scenario.kill()
+	for scenario in network_scenarios + client_scenarios:# + handshake_scenarios:
+		#scenario.kill()
+		os.killpg(os.getpgid(scenario.pid), SIGTERM)
 		DEBUG(f"stop scenario {scenario.args}")
 	network_scenarios.clear()
 	client_scenarios.clear()
@@ -469,6 +471,7 @@ def parse_raw_80211(p):
 			signal = "%s" % p[RadioTap].dBm_AntSignal if hasattr(p[RadioTap], "dBm_AntSignal") else "-"
 			freq = "%d" % p[RadioTap].ChannelFrequency if hasattr(p[RadioTap], "ChannelFrequency") else "-"
 
+			on_probe(essid, sta, freq, signal, vendor)
 			if essid:
 				if statistics(sta, essid):
 					INFO3("{sta} ({vendor}) [{count}] {signal} dBM ({freq} MHz): {essid}".format(
@@ -482,7 +485,6 @@ def parse_raw_80211(p):
 						count=len(probes[essid]),
 						signal=signal, freq=freq, essid=essid)
 					)
-				on_probe(essid, sta, freq, signal, vendor)
 				passwords_new = update_handshakes_info()
 				if passwords_new:
 					for essid in passwords_new:
