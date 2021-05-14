@@ -10,7 +10,7 @@ If client connects to this network Karma will launch every attack scenario, desc
 
 ### Installation
 
-`sudo pip3 install scapy mac-vendor-lookup netaddr argparse colorama`
+`sudo pip3 install scapy mac-vendor-lookup netaddr argparse colorama getkey`
 
 ### Setup
 
