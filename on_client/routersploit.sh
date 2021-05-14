@@ -1,10 +1,14 @@
 #!/bin/bash
 
 WAIT=2
-DPORT=80
+PORTS=(80 8080 443)
 HOME='/home/pi'
 
-if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
-	echo '[*] running Routersploit attacks'
-	$HOME/src/routersploit/rsf.py -m 'scanners/cameras/camera_scan' -s "target $1"
-fi
+for port in ${PORTS[*]}
+do
+	if nc -nw $WAIT $1 $port < /dev/null 2> /dev/null; then
+		echo '[*] running Routersploit attacks'
+		$HOME/src/routersploit/rsf.py -m 'scanners/cameras/camera_scan' -s "target $1" 2> /dev/null
+		break
+	fi
+done
