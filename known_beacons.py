@@ -23,7 +23,7 @@ def parse(p):
 	global beacons
 	if Dot11 in p and p[Dot11].subtype == 11 and p[Dot11].addr3 in beacons.keys():
 		if not p[Dot11].addr2 in found:
-			print("[*] Authentication received " + p[Dot11].addr2)
+			#print("[*] Authentication received " + p[Dot11].addr2)
 			ans = RadioTap()/Dot11(subtype=11, type=0, addr1=p[Dot11].addr2, addr2=p[Dot11].addr1, addr3=p[Dot11].addr3, ID=p[Dot11].ID)/\
 				Dot11Auth(algo=0, seqnum=2, status=0)
 			sendp(ans, iface=args.iface, count=1, loop=0)
@@ -46,7 +46,7 @@ def sniffer(iface):
 is_stop = False
 def send(beacon):
 	while not is_stop:
-		sendp(beacon["packet"], iface=args.iface, count=50)
+		sendp(beacon["packet"], iface=args.iface, count=10)
 		stdout.write(beacon["essid"] + " "*25 + "\r")
 		stdout.flush()
 
