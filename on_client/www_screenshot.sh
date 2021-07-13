@@ -8,7 +8,7 @@ export DISPLAY=:0
 time=$(date +'%H:%M:%S_%d.%m.%Y')
 
 function www_screenshot(){
-	timeout $TIMEOUT surf "$1" > /dev/null 2> /dev/null &
+	timeout $TIMEOUT surf -t "$1" > /dev/null 2> /dev/null &
 	sleep $[TIMEOUT-2]
 	window_id=$(xwininfo -root -tree | grep '.*|.*("surf" "Surf")' | awk '{print $1}')
 	if [ x$window_id != "x" ]; then
