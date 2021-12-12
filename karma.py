@@ -336,9 +336,7 @@ hostapd_wpa = None
 hostapd_wpa_is_start = False
 victim_trafic = PacketList()
 def start_AP_OPN(iface, essid):
-	global hostapd_opn, hostapd_opn_is_start, victim_trafic, handshakes, stop_hopping, known_targets
-
-	stop_hopping = True
+	global hostapd_opn, hostapd_opn_is_start, victim_trafic, handshakes, known_targets
 	
 	if hostapd_opn_is_start:
 		return
@@ -373,7 +371,6 @@ def start_AP_OPN(iface, essid):
 		hostapd_opn.shutdown()
 		ERROR("network OPN \"{essid}\" wasn't started".format(essid=essid))
 
-	#stop_hopping = False
 	hostapd_opn = None
 	victim_trafic = PacketList()
 	known_targets.clear()
@@ -599,17 +596,6 @@ def sniffer(iface):
 	except:
 		return
 
-stop_hopping = False
-def channel_hopping():
-	global stop_hopping
-	#channels = [1,2,3,4,5,6,7,8,9,10,11]
-	channels = [1,6,11]
-	while True:
-		if not stop_hopping:
-			channel = random.choice(channels)
-			#DEBUG("hop channel %d" % channel)
-			os.system("iwconfig {iface} channel {ch}".format(iface=args.mon, ch=channel))
-			sleep(CHANNEL_HOPPING_TIMEOUT)
 
 parser = argparse.ArgumentParser(description='KARMA - attack of unauthenticated Wi-Fi clients')
 parser.add_argument("-mon", type=str, metavar='iface', default='', help="interface for monitoring 802.11 Probes")

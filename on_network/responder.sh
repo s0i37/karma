@@ -16,7 +16,8 @@ do
 done
 
 [[ $(pgrep -f Responder.py) = '' ]] && {
-	screen -dmS responder responder -I "$1" -r -d -w -F
+	#screen -dmS responder responder -I "$1" -r -d -w -F
+	responder -I "$1" -r -d -w -F &
 }
 
 inotifywait -e MODIFY -rm /usr/share/responder/logs | while read event

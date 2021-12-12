@@ -16,7 +16,8 @@ echo '[*] SSL splitting'
 	fi
 
 	#screen -dmS sslsplit sslsplit -k /tmp/key.pem -c /tmp/cert.pem -l /tmp/con.log -L /tmp/sslsplit.log -P autossl 0.0.0.0 1080
-	screen -dmS sslsplit socat -v openssl-listen:1080,fork,cert=/tmp/cert_key.pem,cafile=/tmp/cert.pem,verify=0 open:/tmp/sslsplit.log,creat,append 2> /dev/null
+	#screen -dmS sslsplit 
+	socat -v openssl-listen:1080,fork,cert=/tmp/cert_key.pem,cafile=/tmp/cert.pem,verify=0 open:/tmp/sslsplit.log,creat,append 2> /dev/null &
 }
 
 tail -f /tmp/sslsplit.log | while read line
