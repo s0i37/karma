@@ -2,7 +2,6 @@
 
 WAIT=2
 DPORT=445
-HOME='/home/pi'
 #https://github.com/worawit/MS17-010
 
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then

@@ -2,7 +2,6 @@
 
 WAIT=2
 DPORT=554
-HOME='/home/pi'
 
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo '[*] RTSP streaming'
