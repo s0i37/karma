@@ -22,7 +22,5 @@ done
 
 inotifywait -e MODIFY -rm /usr/share/responder/logs | while read event
 do
- 	if echo $event | grep -e NTLM -e ClearText --color=auto; then
- 		led yellow on 2> /dev/null
- 	fi
+ 	echo $event | grep -e NTLM -e ClearText --color=auto
 done

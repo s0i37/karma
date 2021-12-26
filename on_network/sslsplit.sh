@@ -22,7 +22,5 @@ echo '[*] SSL splitting'
 
 tail -f /tmp/sslsplit.log | while read line
 do
-	if echo "$line" | grep -ai -e cookie -e passw -e token --color=auto; then
-		led yellow on 2> /dev/null
-	fi
+	echo "$line" | grep -ai -e cookie -e passw -e token --color=auto
 done

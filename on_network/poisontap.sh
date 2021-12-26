@@ -21,7 +21,5 @@ sleep 5 # after captive portal checks
 
 tail -f /opt/poisontap/poisontap.cookies.log | while read line
 do
-	if echo $line | grep 'Cookie:' --color=auto; then
-		led yellow on 2> /dev/null
-	fi
+	echo $line | grep 'Cookie:' --color=auto
 done
