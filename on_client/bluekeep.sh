@@ -7,5 +7,5 @@ DPORT=3389
 if nc -nw $WAIT $1 $DPORT < /dev/null 2> /dev/null; then
 	echo '[*] checking BlueKeep'
 	/opt/bluekeep/bluekeep_check.py $1 > /tmp/bluekeep.log 2>&1
-	grep 'VULNERABLE' /tmp/bluekeep.log --color=auto
+	grep 'VULNERABLE' /tmp/bluekeep.log --color=auto && led red on 2> /dev/null
 fi
