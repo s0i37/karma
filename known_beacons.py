@@ -18,12 +18,23 @@ RATE_11B = b"\x96"
 def get_random_mac():
 	return "00:0f:00:" + ":".join(list(map(lambda i:"%x"%int(random()*0xff), [i for i in range(3)])))
 
+def probe_response(source, target, essid):
+	#radio = RadioTap(len=18, present=0x482e,Rate=2,Channel=2412,ChannelFlags=0x00a0,dBm_AntSignal=chr(77),Antenna=1)
+	radio = RadioTap()
+	probe = Dot11(subtype=5, addr1=target, addr2=source, addr3=source, SC=0x3060)/\
+	 Dot11ProbeResp(timestamp=123123123, beacon_interval=0x0064, cap=0x2104)/\
+	 Dot11Elt(ID='SSID', info=essid)/\
+	 Dot11Elt(ID='Rates', info=b'\x8c\x12\x98\x24\xb0\x48\x60\x6c')/\
+	 Dot11Elt(ID='DSset', info=int(36).to_bytes(1,'big'))
+	sendp(radio/probe, iface=args.iface, count=1)
+	#wrpcap("probe.pcap", radio/probe)
+
 found = {}
 def parse(p):
 	global beacons
 	if Dot11 in p and p[Dot11].subtype == 11 and p[Dot11].addr3 in beacons.keys():
 		if not p[Dot11].addr2 in found:
-			#print("[*] Authentication received " + p[Dot11].addr2)
+			print("[*] Authentication received " + p[Dot11].addr2)
 			ans = RadioTap()/Dot11(subtype=11, type=0, addr1=p[Dot11].addr2, addr2=p[Dot11].addr1, addr3=p[Dot11].addr3, ID=p[Dot11].ID)/\
 				Dot11Auth(algo=0, seqnum=2, status=0)
 			sendp(ans, iface=args.iface, count=1, loop=0)
@@ -39,6 +50,14 @@ def parse(p):
 				del(beacons[p[Dot11].addr3])
 			except:
 				pass
+	elif Dot11 in p and p[Dot11].subtype == 4: # Probe-request
+		essid = p[Dot11][Dot11Elt].info.decode("utf-8")
+		if essid and essid in essids:
+			print("[*] Probe request " + essid)
+			for mac in essids:
+				if essids[mac]["essid"] == essid:
+					probe_response(mac, p[Dot11].addr2, essid)
+					break
 
 def sniffer(iface):
 	sniff(iface=iface, prn=parse, store=0)
