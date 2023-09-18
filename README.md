@@ -27,7 +27,7 @@ sudo apt install nmap ngrep hydra medusa samba-common-bin smbclient sslsplit soc
 sudo apt install freerdp2-x11 rdesktop surf graphicsmagick-imagemagick-compat xserver-xorg-core xinit
 sudo apt install python3-pip
 sudo pip3 install pysmb impacket routersploit
-wget https://github.com/HynekPetrak/detect_bluekeep.py/blob/master/detect_bluekeep.py -O bluekeep/detect_bluekeep.py
+wget https://github.com/HynekPetrak/detect_bluekeep.py/blob/master/detect_bluekeep.py -O bluekeep/bluekeep_check.py
 ```
 
 ### Setup
