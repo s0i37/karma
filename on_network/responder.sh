@@ -15,7 +15,7 @@ do
 	fi
 done
 
-if [ $(pgrep -f Responder.py) = '' ]; then
+if [ -z $(pgrep -f Responder.py) ]; then
 	#screen -dmS responder responder -I "$1" -r -d -w -F
 	responder -I "$1" -r -d -w -F &
 fi
