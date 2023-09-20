@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 from nmb.NetBIOS import NetBIOS # pip install pysmb
 from sys import argv
 
