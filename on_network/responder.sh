@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo '[*] running Responder attacks'
+sleep 10 # give ports to another programs
 
 iptables -t nat -vnL PREROUTING > /tmp/iptables.txt
 

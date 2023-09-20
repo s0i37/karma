@@ -7,7 +7,7 @@ if ! iptables -t nat -vnL PREROUTING | grep "$1" | grep -q ' 443'; then
 fi
 
 #if [ -z $(pgrep /usr/bin/sslsplit) ]; then
-if [ -z $(pgrep /usr/bin/socat) ]; then
+if [ -z $(pgrep socat) ]; then
 	if [ ! -s /tmp/key.pem -o ! -s /tmp/cert.pem -o ! -s /tmp/cert_key.pem ]; then
 		openssl req -new -x509 -keyout /tmp/key.pem -out /tmp/cert.pem -days 365 -nodes -batch
 		cat /tmp/cert.pem /tmp/key.pem > /tmp/cert_key.pem
