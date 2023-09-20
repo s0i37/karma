@@ -20,14 +20,19 @@ Scripts engine:
 cd /opt/
 git clone https://github.com/samyk/poisontap
 git clone https://github.com/lgandx/Responder responder
-	sudo ln -s responder/Responder.py /usr/local/bin/responder
-	sudo ln -s responder /usr/share/responder
+	sudo ln -s /opt/responder/Responder.py /usr/local/bin/responder
+	sudo ln -s /opt/responder /usr/share/responder
+git clone https://github.com/threat9/routersploit
+	sudo ln -s /opt/routersploit/rsf.py /usr/local/bin/rsf.py
 git clone https://github.com/Sab0tag3d/SIET
-sudo apt install nmap ngrep hydra medusa samba-common-bin smbclient sslsplit socat inotify-tools samba
+sudo apt install python3 php nodejs
+sudo apt install nmap ngrep hydra medusa samba-common-bin smbclient sslsplit socat inotify-tools samba python-impacket
 sudo apt install freerdp2-x11 rdesktop surf graphicsmagick-imagemagick-compat xserver-xorg-core xinit
 sudo apt install python3-pip
-sudo pip3 install pysmb impacket routersploit
-wget https://github.com/HynekPetrak/detect_bluekeep.py/blob/master/detect_bluekeep.py -O bluekeep/bluekeep_check.py
+sudo pip3 install pysmb
+echo 'export PATH="$PATH:/usr/share/doc/python-impacket/examples"' >> ~/.bashrc
+echo 'export PATH="$PATH:/usr/share/doc/python-impacket/examples"' >> /root/.bashrc
+wget https://github.com/HynekPetrak/detect_bluekeep.py/blob/master/detect_bluekeep.py -O /opt/bluekeep/bluekeep_check.py
 ```
 
 ### Setup
