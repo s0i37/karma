@@ -1,6 +1,6 @@
 #!/bin/bash
 
 echo '[*] writing trafic'
-time=$(date +'%H:%M:%S_%d.%m.%Y')
+time=$(date +'%d.%m.%Y_%H:%M:%S')
 
 tcpdump -i "$1" -nn -w "${2}_${time}_${RANDOM}.pcap"
