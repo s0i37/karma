@@ -229,8 +229,6 @@ class Hostapd:
 		self.network = IPNetwork(network)
 		DEBUG("ifconfig {iface} {network}".format(iface=self.iface, network=network))
 		os.system("ifconfig {iface} {network}".format(iface=self.iface, network=network))
-		os.system("ip r add {network} dev {iface} table 97".format(iface=self.iface, network=str(self.network.cidr)))
-		os.system("ip rule add to {network} lookup 97".format(iface=self.iface, network=str(self.network.cidr)))
 
 
 class Hostapd_OPN(Hostapd):
